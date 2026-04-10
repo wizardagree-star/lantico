@@ -11,4 +11,4 @@ COPY . .
 
 RUN python manage.py collectstatic --noinput
 
-CMD sh -c "python manage.py migrate --noinput && python manage.py seed_cases && gunicorn lantico.wsgi:application --bind 0.0.0.0:\$PORT"
+CMD sh -c "python manage.py makemigrations test_app --noinput && python manage.py migrate --noinput && python manage.py seed_cases && gunicorn lantico.wsgi:application --bind 0.0.0.0:\$PORT"
