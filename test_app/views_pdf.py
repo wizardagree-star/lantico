@@ -24,19 +24,19 @@ from reportlab.lib.enums import TA_LEFT
 
 from .models import TestSession, Dimension, SITUATIONAL_NOTE
 
-# ── Fonts ──────────────────────────────────────────────────
-# DejaVuSans ships with reportlab and supports Cyrillic
-try:
-    pdfmetrics.registerFont(TTFont("DejaVu", "DejaVuSans.ttf"))
-    pdfmetrics.registerFont(TTFont("DejaVu-Bold", "DejaVuSans-Bold.ttf"))
-    FONT = "DejaVu"
-    FONT_BOLD = "DejaVu-Bold"
-except Exception:
-    # Fallback paths (Ubuntu)
-    pdfmetrics.registerFont(TTFont("DejaVu", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))
-    pdfmetrics.registerFont(TTFont("DejaVu-Bold", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"))
-    FONT = "DejaVu"
-    FONT_BOLD = "DejaVu-Bold"
+import os, glob
+
+def _find_font(name):
+    for d in ["/usr/share/fonts", "/usr/local/share/fonts"]:
+        hits = glob.glob(f"{d}/**/{name}", recursive=True)
+        if hits:
+            return hits[0]
+    return name
+
+pdfmetrics.registerFont(TTFont("DejaVu", _find_font("DejaVuSans.ttf")))
+pdfmetrics.registerFont(TTFont("DejaVu-Bold", _find_font("DejaVuSans-Bold.ttf")))
+FONT = "DejaVu"
+FONT_BOLD = "DejaVu-Bold"
 
 # ── Colors ─────────────────────────────────────────────────
 BG       = HexColor("#FFFFFF")
