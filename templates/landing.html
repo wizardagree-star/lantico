@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Лантико — объективная оценка личности{% endblock %}
+
+{% block head %}
+<style>
+.hero{text-align:center;padding:100px 24px 60px}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(30px,5vw,50px);
+  font-weight:700;color:var(--white);line-height:1.2;margin-bottom:20px}
+.hero h1 span{color:var(--accent)}
+.hero p{font-size:17px;line-height:1.7;max-width:520px;margin:0 auto 36px}
+.hero .sub{font-size:12px;color:var(--muted);margin-top:14px}
+.vector-badge{display:inline-flex;gap:6px;margin-bottom:28px;animation:float 4s ease-in-out infinite}
+.vector-badge span{border-radius:8px;padding:5px 12px;font-size:12px;font-family:'DM Mono',monospace}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.dims{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;
+  max-width:1000px;margin:0 auto;padding:20px 24px 60px}
+.dim-card{background:var(--card);border:1px solid var(--border);border-radius:18px;
+  padding:28px 24px;transition:all .3s}
+.dim-card:hover{transform:translateY(-3px)}
+.dim-icon{width:44px;height:44px;border-radius:12px;display:inline-flex;align-items:center;
+  justify-content:center;font-size:20px;flex-shrink:0}
+.dim-card h3{font-size:16px;font-weight:600;color:var(--white)}
+.dim-card .code{font-size:11px;font-family:'DM Mono',monospace;letter-spacing:1px}
+.dim-card p{font-size:14px;line-height:1.65;margin-top:14px}
+
+.steps{max-width:600px;margin:0 auto;padding:0 24px 80px}
+.step{display:flex;gap:16px;padding:18px 22px;background:var(--card);border:1px solid var(--border);
+  border-radius:14px;margin-bottom:12px}
+.step-num{flex-shrink:0;width:36px;height:36px;border-radius:10px;
+  background:rgba(167,139,250,.1);color:var(--accent);display:flex;align-items:center;
+  justify-content:center;font-size:13px;font-weight:700;font-family:'DM Mono',monospace}
+.step strong{color:var(--white);font-size:14px}
+.step p{font-size:13px;line-height:1.6;margin-top:4px}
+
+.section-label{text-align:center;font-size:11px;letter-spacing:3px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:8px}
+.section-title{text-align:center;font-size:24px;font-weight:600;color:var(--white);margin-bottom:36px}
+
+footer{text-align:center;padding:24px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+
+/* ambient glows */
+.glow{position:fixed;border-radius:50%;pointer-events:none;z-index:0}
+.glow-1{top:-20%;left:30%;width:40vw;height:40vw;background:radial-gradient(circle,rgba(167,139,250,.06),transparent 70%);animation:pulse 6s ease-in-out infinite}
+.glow-2{bottom:-10%;right:20%;width:30vw;height:30vw;background:radial-gradient(circle,rgba(244,114,182,.04),transparent 70%);animation:pulse 8s ease-in-out infinite 2s}
+@keyframes pulse{0%,100%{opacity:.4}50%{opacity:.7}}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="glow glow-1"></div>
+<div class="glow glow-2"></div>
+
+<div style="position:relative;z-index:1">
+
+  <!-- nav -->
+  <nav style="display:flex;justify-content:space-between;align-items:center;padding:24px 32px;max-width:1100px;margin:0 auto" class="fade-in">
+    <span style="font-size:15px;font-weight:600;color:var(--accent);letter-spacing:3px;text-transform:uppercase">Лантико</span>
+    <span style="font-size:12px;color:var(--muted)">v1.0</span>
+  </nav>
+
+  <!-- hero -->
+  <section class="hero fade-in">
+    <div class="vector-badge">
+      <span style="background:rgba(244,114,182,.1);border:1px solid rgba(244,114,182,.25);color:var(--kind)">KIND:8</span>
+      <span style="background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.25);color:var(--will)">WILL:9</span>
+      <span style="background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);color:var(--iq)">IQ:6</span>
+      <span style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);color:var(--hon)">HON:3</span>
+    </div>
+    <h1>Объективная оценка<br><span>личности</span></h1>
+    <p>16 проективных ситуаций. Никаких «да/нет». Только ваши поступки в конфликте ценностей — доброта, воля, ум и честность.</p>
+    <a href="/test/" class="btn">Начать тест →</a>
+    <div class="sub">~5 минут · анонимно · бесплатно</div>
+  </section>
+
+  <!-- 4 dimensions -->
+  <div class="section-label">Методология</div>
+  <div class="section-title">4 измерения личности</div>
+  <div class="dims">
+    <div class="dim-card" style="--c:var(--kind)" onmouseenter="this.style.borderColor='rgba(244,114,182,.35)'" onmouseleave="this.style.borderColor='var(--border)'">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="dim-icon" style="background:rgba(244,114,182,.1);border:1.5px solid rgba(244,114,182,.25);color:var(--kind)">♡</div>
+        <div><h3>Доброта</h3><div class="code" style="color:var(--kind)">KIND</div></div>
+      </div>
+      <p>Готовность тратить личный ресурс ради блага другого. Мы ставим вас перед выбором: свои интересы или помощь ближнему.</p>
+    </div>
+    <div class="dim-card" onmouseenter="this.style.borderColor='rgba(96,165,250,.35)'" onmouseleave="this.style.borderColor='var(--border)'">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="dim-icon" style="background:rgba(96,165,250,.1);border:1.5px solid rgba(96,165,250,.25);color:var(--will)">⚡</div>
+        <div><h3>Воля</h3><div class="code" style="color:var(--will)">WILL</div></div>
+      </div>
+      <p>Способность продолжать действие вопреки дискомфорту. Проверяем вашу устойчивость к лени, соблазнам и страху.</p>
+    </div>
+    <div class="dim-card" onmouseenter="this.style.borderColor='rgba(52,211,153,.35)'" onmouseleave="this.style.borderColor='var(--border)'">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="dim-icon" style="background:rgba(52,211,153,.1);border:1.5px solid rgba(52,211,153,.25);color:var(--iq)">◆</div>
+        <div><h3>Ум</h3><div class="code" style="color:var(--iq)">IQ</div></div>
+      </div>
+      <p>Способность видеть суть и выстраивать логические цепочки. Четыре задачи на закономерности, логику и причинность.</p>
+    </div>
+    <div class="dim-card" onmouseenter="this.style.borderColor='rgba(251,191,36,.35)'" onmouseleave="this.style.borderColor='var(--border)'">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="dim-icon" style="background:rgba(251,191,36,.1);border:1.5px solid rgba(251,191,36,.25);color:var(--hon)">✦</div>
+        <div><h3>Честность</h3><div class="code" style="color:var(--hon)">HON</div></div>
+      </div>
+      <p>Выбор истины, когда ложь выгодна и безопасна. Ситуации, где никто не узнает о вашем решении — кроме вас.</p>
+    </div>
+  </div>
+
+  <!-- steps -->
+  <div class="section-label" style="margin-top:20px">Как это работает</div>
+  <div class="steps">
+    <div class="step"><div class="step-num">01</div><div><strong>Вы проходите 16 ситуаций</strong><p>Каждая ставит одну ценность против другой. Прямых вопросов нет.</p></div></div>
+    <div class="step"><div class="step-num">02</div><div><strong>Алгоритм считает профиль</strong><p>Медиана для стабильных черт, среднее для интеллекта. Высокая дисперсия = ситуативное поведение.</p></div></div>
+    <div class="step"><div class="step-num">03</div><div><strong>Получаете вектор личности</strong><p>Радар-диаграмма, текстовая интерпретация и уникальная ссылка на результат.</p></div></div>
+  </div>
+
+  <footer>Лантико · 2026</footer>
+</div>
+{% endblock %}

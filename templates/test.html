@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}Тест — Лантико{% endblock %}
+
+{% block head %}
+<style>
+.test-wrap{max-width:600px;margin:0 auto;padding:32px 24px 140px}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.logo{font-size:14px;font-weight:600;color:var(--accent);letter-spacing:2px;text-transform:uppercase}
+.back-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:6px 14px;
+  font-size:12px;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .2s}
+.back-btn:hover{border-color:var(--muted)}
+
+/* progress */
+.progress-info{display:flex;justify-content:space-between;margin-bottom:8px;font-size:12px}
+.progress-label{color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.progress-pct{color:var(--accent);font-family:'DM Mono',monospace}
+.progress-track{height:4px;border-radius:2px;background:var(--border);overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),#c4b5fd);
+  transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+/* dimension pill */
+.dim-pill{display:inline-flex;align-items:center;gap:5px;border-radius:20px;
+  padding:4px 14px;font-size:12px;font-weight:500;letter-spacing:.5px;margin-bottom:20px}
+
+/* question */
+.question-text{font-size:17px;line-height:1.7;color:var(--white);margin-bottom:28px}
+
+/* options */
+.options{display:flex;flex-direction:column;gap:10px}
+.opt-btn{display:flex;align-items:flex-start;gap:14px;width:100%;text-align:left;
+  background:var(--card);border:1.5px solid var(--border);border-radius:14px;
+  padding:16px 20px;cursor:pointer;font-family:inherit;transition:all .2s;
+  color:var(--text);font-size:14px;line-height:1.6}
+.opt-btn:hover{border-color:var(--muted)}
+.opt-btn.selected{background:rgba(167,139,250,.08);border-color:var(--accent);color:var(--white)}
+.radio{flex-shrink:0;width:22px;height:22px;border-radius:50%;border:2px solid var(--muted);
+  display:flex;align-items:center;justify-content:center;margin-top:2px;transition:all .2s}
+.opt-btn.selected .radio{border-color:var(--accent)}
+.radio-dot{width:10px;height:10px;border-radius:50%;background:var(--accent);
+  transform:scale(0);transition:transform .2s}
+.opt-btn.selected .radio-dot{transform:scale(1)}
+
+/* sticky bottom */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;padding:16px 24px 28px;
+  background:linear-gradient(to top,var(--bg) 60%,transparent);display:flex;justify-content:center}
+
+/* animations */
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.slide-in{animation:slideIn .35s ease both}
+
+.loading{display:flex;align-items:center;justify-content:center;min-height:80vh;flex-direction:column}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+{% endblock %}
+
+{% block body %}
+<div id="app"></div>
+
+<script>
+const DIM = {
+  KIND: { label:'Доброта', icon:'♡', color:'#F472B6' },
+  WILL: { label:'Воля',    icon:'⚡', color:'#60A5FA' },
+  IQ:   { label:'Ум',      icon:'◆', color:'#34D399' },
+  HON:  { label:'Честность',icon:'✦', color:'#FBBF24' },
+};
+
+let questions = [];
+let currentIdx = 0;
+let answers = {};    // case_id → option number
+let selected = null;
+
+const app = document.getElementById('app');
+
+function showLoading() {
+  app.innerHTML = '<div class="loading"><div class="spinner"></div><div style="color:var(--muted);font-size:14px">Загружаем вопросы…</div></div>';
+}
+
+function render() {
+  const q = questions[currentIdx];
+  const total = questions.length;
+  const pct = Math.round((currentIdx / total) * 100);
+  const isLast = currentIdx === total - 1;
+  const d = DIM[q.dimension] || { label: q.dimension, icon:'?', color:'#999' };
+
+  app.innerHTML = `
+    <div class="test-wrap">
+      <div class="top-bar">
+        <span class="logo">Лантико</span>
+        ${currentIdx > 0 ? '<button class="back-btn" id="backBtn">← Назад</button>' : ''}
+      </div>
+
+      <div style="max-width:520px;margin:0 auto 28px">
+        <div class="progress-info">
+          <span class="progress-label">Вопрос ${currentIdx + 1} из ${total}</span>
+          <span class="progress-pct">${pct}%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+
+      <div class="slide-in" id="questionArea">
+        <div class="dim-pill" style="background:${d.color}14;border:1px solid ${d.color}30;color:${d.color}">
+          ${d.icon} ${d.label}
+        </div>
+        <p class="question-text">${q.situation_text}</p>
+        <div class="options" id="optionsWrap">
+          ${q.options.map((o, i) => `
+            <button class="opt-btn ${selected === o.number ? 'selected' : ''}"
+                    data-num="${o.number}"
+                    style="animation-delay:${i * 50}ms">
+              <span class="radio"><span class="radio-dot"></span></span>
+              <span>${o.text}</span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <button class="btn" id="nextBtn" ${selected == null ? 'disabled' : ''}
+              style="min-width:200px">
+        ${isLast ? 'Завершить тест' : 'Далее →'}
+      </button>
+    </div>
+  `;
+
+  // bind events
+  document.querySelectorAll('.opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selected = parseInt(btn.dataset.num);
+      render();
+    });
+  });
+
+  const backBtn = document.getElementById('backBtn');
+  if (backBtn) backBtn.addEventListener('click', goBack);
+
+  document.getElementById('nextBtn').addEventListener('click', goNext);
+}
+
+function goBack() {
+  if (currentIdx > 0) {
+    currentIdx--;
+    selected = answers[questions[currentIdx].case_id] ?? null;
+    render();
+  }
+}
+
+async function goNext() {
+  if (selected == null) return;
+  const q = questions[currentIdx];
+  answers[q.case_id] = selected;
+
+  if (currentIdx < questions.length - 1) {
+    currentIdx++;
+    selected = answers[questions[currentIdx].case_id] ?? null;
+    render();
+  } else {
+    await submitTest();
+  }
+}
+
+async function submitTest() {
+  const btn = document.getElementById('nextBtn');
+  btn.disabled = true;
+  btn.textContent = 'Отправляем…';
+
+  const payload = questions.map(q => ({
+    case_id: q.case_id,
+    selected_option: answers[q.case_id],
+  }));
+
+  try {
+    const res = await fetch('/api/submit_test/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers: payload }),
+    });
+    const data = await res.json();
+    if (data.session_id) {
+      window.location.href = '/result/' + data.session_id + '/';
+    } else {
+      alert('Ошибка: ' + JSON.stringify(data));
+      btn.disabled = false;
+      btn.textContent = 'Завершить тест';
+    }
+  } catch (err) {
+    alert('Ошибка сети: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'Завершить тест';
+  }
+}
+
+// init
+showLoading();
+fetch('/api/questions/')
+  .then(r => r.json())
+  .then(data => {
+    questions = data;
+    currentIdx = 0;
+    selected = null;
+    render();
+  })
+  .catch(err => {
+    app.innerHTML = '<div class="loading" style="color:#EF4444">Не удалось загрузить вопросы: ' + err.message + '</div>';
+  });
+</script>
+{% endblock %}

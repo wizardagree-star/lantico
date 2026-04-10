@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Результат — Лантико{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+.result-wrap{max-width:1080px;margin:0 auto;padding:48px 24px 80px}
+.result-header{text-align:center;margin-bottom:48px}
+.result-header .label{font-size:13px;letter-spacing:4px;text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:10px}
+.result-header h1{font-size:30px;font-weight:700;color:var(--white);margin-bottom:14px;font-family:'DM Sans',sans-serif}
+.vector-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.vector-tag{border-radius:8px;padding:4px 12px;font-size:13px;font-family:'DM Mono',monospace}
+
+.grid{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:24px}
+@media(max-width:768px){.grid{grid-template-columns:1fr}}
+
+.radar-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;
+  position:sticky;top:24px;align-self:start}
+.radar-card .label{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);
+  text-align:center;margin-bottom:8px}
+
+.cards{display:flex;flex-direction:column;gap:18px}
+.dim-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px 28px;
+  transition:border-color .2s}
+.dim-card:hover{border-color:rgba(167,139,250,.3)}
+.dim-card-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.score-badge{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:700;font-family:'DM Mono',monospace}
+.dim-label{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted)}
+.dim-sub{font-size:12px;color:var(--muted)}
+.dim-card p{font-size:14px;line-height:1.65;margin:0}
+.warn-box{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);border-radius:10px;
+  padding:10px 14px;font-size:13px;line-height:1.55;color:#F59E0B;display:flex;gap:8px;
+  align-items:flex-start;margin-top:14px}
+
+.pdf-section{text-align:center;margin-top:48px}
+.pdf-section .sub{font-size:12px;color:var(--muted);margin-top:10px}
+
+.link-section{text-align:center;margin-top:20px;padding:16px;background:var(--card);
+  border:1px solid var(--border);border-radius:12px;max-width:500px;margin-left:auto;margin-right:auto}
+.link-section input{background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:10px 14px;color:var(--white);font-family:'DM Mono',monospace;font-size:12px;
+  width:100%;text-align:center;margin-top:8px}
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="result-wrap fade-in" id="app">
+  <div class="loading" style="display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column">
+    <div class="spinner" style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:16px"></div>
+    <div style="color:var(--muted);font-size:14px">Загружаем результаты…</div>
+  </div>
+</div>
+
+<script>
+const SESSION_ID = "{{ session_id }}";
+
+const DIM_ORDER = ['KIND','WILL','IQ','HON'];
+const DIM = {
+  KIND:{label:'Доброта',icon:'♡',color:'#F472B6'},
+  WILL:{label:'Воля',icon:'⚡',color:'#60A5FA'},
+  IQ:{label:'Ум',icon:'◆',color:'#34D399'},
+  HON:{label:'Честность',icon:'✦',color:'#FBBF24'},
+};
+const SIT_NOTE = 'Ваше поведение в этой сфере сильно зависит от ситуации и настроения. В одних обстоятельствах вы проявляете это качество ярко, в других — почти не используете.';
+
+function score(dim, results) {
+  const r = results[dim];
+  return dim === 'IQ' ? r.average_score : r.median;
+}
+
+function renderResult(data) {
+  const { results, vector_signature } = data;
+  const app = document.getElementById('app');
+  const url = window.location.href;
+
+  app.innerHTML = `
+    <div class="result-header">
+      <div class="label">Лантико</div>
+      <h1>Результаты тестирования</h1>
+      <div class="vector-row">
+        ${DIM_ORDER.map(d => `<span class="vector-tag" style="background:${DIM[d].color}14;border:1px solid ${DIM[d].color}30;color:${DIM[d].color}">${d}:${vector_signature[d]}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="radar-card">
+        <div class="label">Ваш профиль</div>
+        <canvas id="radarChart" style="max-height:360px"></canvas>
+      </div>
+      <div class="cards">
+        ${DIM_ORDER.map(d => {
+          const r = results[d];
+          const s = score(d, results);
+          const dm = DIM[d];
+          return `
+          <div class="dim-card" onmouseenter="this.style.borderColor='${dm.color}40'" onmouseleave="this.style.borderColor='var(--border)'">
+            <div class="dim-card-head">
+              <div class="score-badge" style="background:${dm.color}18;color:${dm.color};border:1.5px solid ${dm.color}40">${s}</div>
+              <div>
+                <div class="dim-label">${dm.icon} ${dm.label}</div>
+                ${d === 'IQ'
+                  ? `<div class="dim-sub">Верных ответов: ${r.correct_answers} из ${r.total_questions}</div>`
+                  : `<div class="dim-sub">Дисперсия: ${r.variance.toFixed(2)}</div>`
+                }
+              </div>
+            </div>
+            <p>${r.interpretation}</p>
+            ${r.is_situational ? `<div class="warn-box"><span style="font-size:16px;flex-shrink:0">⚠</span><span>${SIT_NOTE}</span></div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <div class="pdf-section">
+      <button class="btn" id="pdfBtn">⬇ Скачать PDF</button>
+      <div class="sub">Сохраните результат себе</div>
+    </div>
+
+    <div class="link-section">
+      <div style="font-size:13px;color:var(--muted)">Уникальная ссылка на ваш результат:</div>
+      <input type="text" readonly value="${url}" id="linkInput" onclick="this.select()">
+    </div>
+  `;
+
+  // Radar chart
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: DIM_ORDER.map(d => DIM[d].label),
+      datasets: [{
+        label: 'Балл',
+        data: DIM_ORDER.map(d => score(d, results)),
+        backgroundColor: 'rgba(167,139,250,.12)',
+        borderColor: '#A78BFA',
+        borderWidth: 2,
+        pointBackgroundColor: '#A78BFA',
+        pointRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        r: {
+          min: 0, max: 10,
+          ticks: { stepSize: 2, color: '#6B6E7A', backdropColor: 'transparent', font: { size: 10 } },
+          grid: { color: 'rgba(255,255,255,.06)' },
+          angleLines: { color: 'rgba(255,255,255,.06)' },
+          pointLabels: { color: '#C8CAD0', font: { size: 13, family: "'DM Sans'" } },
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#16171E',
+          borderColor: '#23252F',
+          borderWidth: 1,
+          titleFont: { family: "'DM Sans'" },
+          bodyFont: { family: "'DM Sans'" },
+        }
+      }
+    }
+  });
+
+  // PDF download
+  document.getElementById('pdfBtn').addEventListener('click', async function() {
+    this.disabled = true;
+    this.textContent = 'Генерация PDF…';
+    try {
+      const res = await fetch('/api/result/' + SESSION_ID + '/pdf/');
+      if (!res.ok) throw new Error('Ошибка сервера');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'lantico-result.pdf'; a.click();
+      URL.revokeObjectURL(url);
+    } catch(e) {
+      alert('Ошибка: ' + e.message);
+    }
+    this.disabled = false;
+    this.textContent = '⬇ Скачать PDF';
+  });
+}
+
+// fetch data
+fetch('/api/result/' + SESSION_ID + '/')
+  .then(r => { if (!r.ok) throw new Error('Сессия не найдена'); return r.json(); })
+  .then(renderResult)
+  .catch(err => {
+    document.getElementById('app').innerHTML =
+      '<div style="text-align:center;padding:100px 24px;color:#EF4444;font-size:16px">' +
+      err.message + '<br><br><a href="/" class="btn" style="font-size:14px">На главную</a></div>';
+  });
+</script>
+{% endblock %}
